@@ -1,0 +1,35 @@
+# Raw attack telemetry datasets (never commit these)
+datasets_raw/
+*.evtx
+*.log
+
+# Tool output (local only)
+results/
+output/
+
+# Secrets and environment
+.env
+*.local.*
+*.secret
+.git-credentials
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE folders
+.vscode/
+.idea/
+*.code-workspace
+
+# Python artifacts (for zircolite)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Wazuh Docker runtime data
+wazuh_data/
+wazuh-docker/
