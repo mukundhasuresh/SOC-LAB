@@ -1,14 +1,13 @@
-title: Lateral Movement � PsExec Remote Service Creation via SMB
+title: Lateral Movement — PsExec Named Pipe Creation (Sysmon EID 18)
 id: f6a7b8c9-d0e1-2345-fabc-456789012345
 status: test
 description: >
-  Detects lateral movement using PsExec or similar tools that create a remote
-  service over SMB. Sysmon Event ID 1 captures the PSEXESVC.exe process created
-  on the target system; Event ID 13 captures the service registry key creation.
-  This is one of the most common lateral movement techniques in real incidents.
+  Detects PsExec lateral movement via Sysmon Event ID 18 (PipeEvent — Pipe
+  Connected). PsExec uses the named pipe \ntsvcs or \psexesvc for communication
+  between the attacker and the remote service it installs. The pipe name is a
+  reliable, low-noise indicator of PsExec activity.
 references:
   - https://attack.mitre.org/techniques/T1021/002/
-  - https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES
 author: SOC Detection Lab
 date: 2025/01/01
 tags:
@@ -17,22 +16,21 @@ tags:
   - attack.t1021.002
 logsource:
   product: windows
-  category: process_creation
+  category: pipe_created
 detection:
-  selection_psexec:
-    EventID: 1
-    Image|endswith: '\PSEXESVC.exe'
-  selection_service:
-    EventID: 13
-    TargetObject|contains: '\System\CurrentControlSet\Services\PSEXESVC'
-  condition: selection_psexec or selection_service
+  selection:
+    EventID:
+      - 17
+      - 18
+    PipeName|contains:
+      - '\ntsvcs'
+      - '\psexesvc'
+      - '\PSEXESVC'
+  condition: selection
 falsepositives:
-  - Legitimate use of PsExec by IT administrators for remote management
-  - Authorised remote support tools
+  - Legitimate administrative use of PsExec by IT teams
 level: high
 fields:
+  - PipeName
   - Image
-  - ParentImage
-  - CommandLine
-  - User
-  - TargetObject
+  - ProcessId
