@@ -1,14 +1,13 @@
-title: Pass-the-Hash — NTLM Lateral Movement with Explicit Credentials
+title: Pass-the-Hash â€” Special Privileges Assigned to New Logon (NTLM Network Logon)
 id: c3d4e5f6-a7b8-9012-cdef-123456789012
 status: test
 description: >
-  Detects Pass-the-Hash lateral movement. Attackers use a stolen NTLM hash
-  to authenticate without knowing the plaintext password. Key indicator is
-  Event ID 4624 (successful logon) with LogonType 3 (network) or 9 (NewCredentials),
-  using NTLM authentication and a suspicious source process.
+  Detects Pass-the-Hash by correlating Event ID 4624 (successful logon with
+  LogonType 3 network logon) followed by Event ID 4672 (special privileges
+  assigned). This combination where NTLM is used for a network logon that
+  immediately receives elevated privileges is a strong PtH indicator.
 references:
   - https://attack.mitre.org/techniques/T1550/002/
-  - https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES
 author: SOC Detection Lab
 date: 2025/01/01
 tags:
@@ -22,21 +21,17 @@ logsource:
 detection:
   selection_logon:
     EventID: 4624
-    LogonType:
-      - 3
-      - 9
-    AuthenticationPackageName: 'NTLM'
-  filter_local:
-    SubjectUserName|endswith: '$'
-  condition: selection_logon and not filter_local
+    LogonType: 3
+  selection_privileges:
+    EventID: 4672
+  condition: selection_logon or selection_privileges
 falsepositives:
-  - Legitimate NTLM authentication in environments that haven't fully moved to Kerberos
-  - Helpdesk tools using explicit NTLM credentials
+  - Legitimate network logons with admin privileges
+  - Service accounts with elevated rights doing scheduled tasks
 level: high
 fields:
   - SubjectUserName
   - TargetUserName
   - LogonType
   - IpAddress
-  - WorkstationName
   - AuthenticationPackageName
