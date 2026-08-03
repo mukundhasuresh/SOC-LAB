@@ -1,0 +1,92 @@
+{
+  "id": "pth-containment-v1",
+  "name": "Pass-the-Hash Auto-Containment",
+  "description": "Automated containment playbook triggered by T1550 Pass-the-Hash detection. Enriches, notifies, and disables the compromised account.",
+  "trigger": {
+    "type": "webhook",
+    "description": "Receives alert payload from SIEM when T1550 Sigma rule fires",
+    "fields": ["username", "source_ip", "hostname", "alert_id", "timestamp"]
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "name": "Receive SIEM Alert",
+      "type": "trigger",
+      "description": "Webhook receives JSON payload from SIEM containing alert details",
+      "output": ["username", "source_ip", "hostname", "alert_id"]
+    },
+    {
+      "id": "step_2",
+      "name": "Enrich Source IP — VirusTotal",
+      "type": "http_request",
+      "method": "GET",
+      "url": "https://www.virustotal.com/api/v3/ip_addresses/{{source_ip}}",
+      "headers": {
+        "x-apikey": "YOUR_VIRUSTOTAL_API_KEY"
+      },
+      "description": "Check source IP reputation against VirusTotal threat intel",
+      "output": ["vt_malicious_count", "vt_reputation_score"]
+    },
+    {
+      "id": "step_3",
+      "name": "Notify SOC — Slack Webhook",
+      "type": "http_request",
+      "method": "POST",
+      "url": "YOUR_WEBHOOK_URL",
+      "body": {
+        "text": "🚨 PASS-THE-HASH DETECTED",
+        "attachments": [
+          {
+            "color": "danger",
+            "fields": [
+              {"title": "User", "value": "{{username}}", "short": true},
+              {"title": "Source IP", "value": "{{source_ip}}", "short": true},
+              {"title": "Host", "value": "{{hostname}}", "short": true},
+              {"title": "VT Malicious Count", "value": "{{vt_malicious_count}}", "short": true},
+              {"title": "Alert ID", "value": "{{alert_id}}", "short": true},
+              {"title": "Time", "value": "{{timestamp}}", "short": true}
+            ]
+          }
+        ]
+      },
+      "description": "Send enriched alert summary to SOC notification channel"
+    },
+    {
+      "id": "step_4",
+      "name": "Simulate Account Disable",
+      "type": "http_request",
+      "method": "POST",
+      "url": "YOUR_MOCK_AD_ENDPOINT",
+      "body": {
+        "action": "disable_account",
+        "username": "{{username}}",
+        "reason": "Automated containment — T1550 Pass-the-Hash alert {{alert_id}}",
+        "initiated_by": "SOAR_PLAYBOOK",
+        "timestamp": "{{timestamp}}"
+      },
+      "description": "POST to identity provider API to disable the compromised account. In production this targets your AD/Okta/Azure AD management API. Here it targets a mock endpoint for safe demonstration.",
+      "note": "Replace YOUR_MOCK_AD_ENDPOINT with webhook.site for live demo, or your real IdP API in production"
+    },
+    {
+      "id": "step_5",
+      "name": "Log Containment Action",
+      "type": "output",
+      "description": "Record all actions taken for audit trail",
+      "fields": {
+        "alert_id": "{{alert_id}}",
+        "account_disabled": "{{username}}",
+        "source_ip_blocked": "{{source_ip}}",
+        "vt_score": "{{vt_malicious_count}}",
+        "notification_sent": true,
+        "playbook_version": "pth-containment-v1",
+        "completed_at": "{{timestamp}}"
+      }
+    }
+  ],
+  "notes": [
+    "All API keys and webhook URLs are placeholders — never commit real credentials.",
+    "Import this JSON into Shuffle (shuffler.io) free tier to deploy.",
+    "Step 4 uses a mock endpoint — swap for real IdP API before production use.",
+    "This playbook demonstrates automated MTTR reduction for Pass-the-Hash scenarios."
+  ]
+}
