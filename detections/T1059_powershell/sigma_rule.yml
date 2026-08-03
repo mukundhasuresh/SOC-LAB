@@ -1,13 +1,13 @@
-title: Suspicious PowerShell � Encoded Command Execution
+title: Malicious PowerShell Script Block — Obfuscated Code Execution (EID 4104)
 id: e5f6a7b8-c9d0-1234-efab-345678901234
 status: test
 description: >
-  Detects PowerShell launched with encoded command flags (-EncodedCommand, -enc, -ec),
-  commonly used by attackers to obfuscate malicious script payloads and bypass
-  script-block logging. Legitimate use is rare outside of deployment tooling.
+  Detects PowerShell script block logging Event ID 4104 containing obfuscation
+  patterns — string concatenation to reconstruct commands, mixed case evasion,
+  and suspicious cmdlets (New-Item in TEMP, Net. namespace usage). EID 4104
+  captures the deobfuscated script before execution, making it high-fidelity.
 references:
   - https://attack.mitre.org/techniques/T1059/001/
-  - https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES
 author: SOC Detection Lab
 date: 2025/01/01
 tags:
@@ -16,29 +16,22 @@ tags:
   - attack.t1059.001
 logsource:
   product: windows
-  category: process_creation
+  service: powershell
 detection:
-  selection:
-    EventID: 1
-    Image|endswith:
-      - '\powershell.exe'
-      - '\pwsh.exe'
-    CommandLine|contains:
-      - ' -EncodedCommand '
-      - ' -enc '
-      - ' -ec '
-      - ' -e '
-  filter_sccm:
-    ParentImage|contains:
-      - '\ccmexec.exe'
-      - '\sccm'
-  condition: selection and not filter_sccm
+  selection_scriptblock:
+    EventID: 4104
+  selection_obfuscation:
+    ScriptBlockText|contains:
+      - "'+'"
+      - 'eNV:teMP'
+      - 'itemtype DIrectOry'
+      - '[Net.'
+  condition: selection_scriptblock and selection_obfuscation
 falsepositives:
-  - SCCM/ConfigMgr software deployment using encoded PS commands
-  - Some legitimate administrative scripts using encoded payloads
-level: medium
+  - Rare legitimate scripts using string concatenation
+  - Obfuscated deployment scripts from some vendors
+level: high
 fields:
-  - CommandLine
-  - ParentImage
-  - User
-  - Image
+  - ScriptBlockText
+  - ScriptBlockId
+  - Path
