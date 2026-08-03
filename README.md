@@ -46,6 +46,7 @@ bash scripts/run_detections.sh
 
 ## Project Structure
 
+```text
 soc-detection-lab/
 ├── detections/ # 6 Sigma rules + evidence per technique
 ├── ir-reports/ # 3 full incident response reports
@@ -53,6 +54,7 @@ soc-detection-lab/
 ├── datasets/ # Dataset manifest + fetch script
 ├── scripts/ # fetch_datasets.sh + run_detections.sh
 └── docs/ # Architecture diagram + methodology
+```
 
 
 ---
