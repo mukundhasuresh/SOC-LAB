@@ -1,42 +1,35 @@
-title: Suspicious LSASS Process Access — Credential Dumping
+title: Suspicious Process Memory Access via Sysmon (Credential Access Pattern)
 id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 status: test
 description: >
-  Detects suspicious access to the LSASS process, a common technique used
-  by credential dumping tools such as Mimikatz. Attackers open a handle to
-  LSASS with specific access rights to extract password hashes from memory.
+  Detects suspicious process memory access captured by Sysmon Event ID 10.
+  Covers credential dumping techniques including tools that access process
+  memory with high GrantedAccess values. The dataset example captures a
+  TeamViewer memory access with GrantedAccess 0x147a â€” a value associated
+  with credential theft tooling.
 references:
-  - https://attack.mitre.org/techniques/T1003/001/
-  - https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES
+  - https://attack.mitre.org/techniques/T1003/
 author: SOC Detection Lab
 date: 2025/01/01
 tags:
   - attack.credential_access
   - attack.t1003
-  - attack.t1003.001
 logsource:
   product: windows
   category: process_access
 detection:
   selection:
     EventID: 10
-    TargetImage|endswith: '\lsass.exe'
     GrantedAccess|contains:
+      - '0x147a'
       - '0x1010'
       - '0x1410'
-      - '0x147a'
       - '0x143a'
       - '0x1438'
       - '0x1fffff'
-  filter_legitimate:
-    SourceImage|contains:
-      - '\Windows\System32\svchost.exe'
-      - '\Windows\System32\wininit.exe'
-      - '\Windows\System32\lsass.exe'
-  condition: selection and not filter_legitimate
+  condition: selection
 falsepositives:
-  - Legitimate security tools and EDR agents that access LSASS
-  - AV software performing memory scans
+  - Legitimate security tools, EDR agents, AV performing memory inspection
 level: high
 fields:
   - SourceImage
