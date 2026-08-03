@@ -1,13 +1,13 @@
-title: Process Injection — Remote Thread Creation into Foreign Process
+title: Process Injection â€” Remote Thread Created in Remote Process (Sysmon EID 8)
 id: d4e5f6a7-b8c9-0123-defa-234567890123
 status: test
 description: >
-  Detects process injection via remote thread creation (Sysmon Event ID 8 —
-  CreateRemoteThread). Attackers inject malicious code into legitimate processes
-  to evade detection and inherit the target process's privileges and trust.
+  Detects remote thread creation into another process via Sysmon Event ID 8
+  (CreateRemoteThread). The dataset captures a tool (m.exe from a network share)
+  injecting a thread into explorer.exe â€” a classic process injection pattern
+  used to hide malicious code inside a trusted host process.
 references:
   - https://attack.mitre.org/techniques/T1055/
-  - https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES
 author: SOC Detection Lab
 date: 2025/01/01
 tags:
@@ -22,21 +22,16 @@ detection:
     EventID: 8
   filter_legitimate:
     SourceImage|contains:
-      - '\Windows\System32\csrss.exe'
-      - '\Windows\System32\wininit.exe'
-      - '\Windows\System32\svchost.exe'
-      - '\Windows\System32\lsass.exe'
-    TargetImage|contains:
-      - '\Windows\System32\csrss.exe'
-      - '\Windows\System32\wininit.exe'
+      - 'C:\Windows\System32\csrss.exe'
+      - 'C:\Windows\System32\wininit.exe'
   condition: selection and not filter_legitimate
 falsepositives:
-  - Legitimate software using remote threads (some AV/EDR, JIT compilers)
-  - .NET CLR activity
+  - Legitimate software using CreateRemoteThread (some AV/EDR, JIT compilers)
 level: high
 fields:
   - SourceImage
   - TargetImage
+  - NewThreadId
   - StartAddress
-  - StartFunction
   - StartModule
+  - StartFunction
